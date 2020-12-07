@@ -1,0 +1,25 @@
+---
+- name: get remote file contents
+  command: "cat {{ publicKeyPath }}"
+  register: key
+  delegate_to: localhost
+
+- name: create hosts
+  template:
+    src: hosts.j2
+    dest: /tmp/hosts
+
+- name: get basename
+  shell: basename {{ image }}
+  register: basename
+
+- name: download image
+  get_url:
+    url: "{{ image }}"
+    dest: /var/lib/libvirt/images/{{ basename.stdout }}
+    remote_src: yes
+
+- name: create centos vms
+  include_tasks: create_centos8.yaml
+  with_items: "{{ instances }}"
+  when: distro == "centos8"

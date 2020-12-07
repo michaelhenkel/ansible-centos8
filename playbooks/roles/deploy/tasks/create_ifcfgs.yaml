@@ -1,0 +1,12 @@
+- name: "{{ item2.name }}: Create a directory if it does not exist }}"
+  file:
+    path: "/tmp/{{ item2.name }}/network-scripts"
+    state: directory
+
+- name: "{{ item2.name }}: render ifcfg template"
+  template:
+    src: ifcfg.j2
+    dest: "/tmp/{{ item2.name }}/network-scripts/ifcfg-{{ iface.name }}"
+  with_items: "{{ item2.interfaces }}"
+  loop_control:
+    loop_var: iface

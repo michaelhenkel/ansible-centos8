@@ -1,0 +1,37 @@
+variant: fcos
+version: 1.2.0
+passwd:
+  users:
+    - name: {{ username }}
+      groups: [ sudo, docker ]
+      password_hash: "$6$NhwaQ9liYdjwoLF2$xdGtne8p5pxvmlgTZJWO.5yS9t8HOy4W08dzH/rY4pdsAAhj2O6XlyuK6jPuqiY0yq.KLiyIUbsBSUpQt8V1J0"
+      ssh_authorized_keys:
+        - {{ key.stdout }}
+storage:
+  files:
+    - path: /etc/ssh/sshd_config.d/20-enable-passwords.conf
+      mode: 0644
+      contents:
+        inline: |
+          # Fedora CoreOS disables SSH password login by default.
+          # Enable it.
+          # This file must sort before 40-disable-passwords.conf.
+          PasswordAuthentication yes
+    {% for interface in item.interfaces -%}
+    - path: /etc/NetworkManager/system-connections/{{ interface.name }}.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id={{ interface.name }}
+          type=ethernet
+          interface-name={{ interface.name }}
+          [ipv4]
+          method=manual
+          address1={{ interface.ip }}{% if interface.gateway is defined %},{{ interface.gateway }}{% endif %}
+    {% if interface.dns is defined -%}
+          dns={{ interface.dns }};
+          dns-search=
+          may-fail=false
+    {% endif -%}
+    {% endfor -%}

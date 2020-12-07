@@ -1,0 +1,7 @@
+{% for host in groups['all'] -%}
+{% for instance in hostvars[host].instances -%}
+{% for interface in instance.interfaces -%}
+{{ interface.ip.split("/")[0] }} {% if interface.gateway is defined %}{{ instance.name }}.{{ instance.cluster }}.{{ suffix }}{% endif %} {{ instance.name }}-{{ interface.name }}.{{ instance.cluster }}.{{ suffix }} {{ instance.name }}
+{% endfor -%}
+{% endfor -%}
+{% endfor -%}

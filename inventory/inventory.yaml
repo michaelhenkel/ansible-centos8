@@ -1,0 +1,88 @@
+all:
+  vars:
+    image: https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-GenericCloud-8.3.2011-20201204.2.x86_64.qcow2
+    publicKeyPath: /Users/mhenkel/.ssh/id_rsa.pub
+    username: contrail
+    userPwd: c0ntrail123
+    rootPwd: c0ntrail123
+    suffix: local
+    distro: centos8
+  hosts:
+    s30:
+      instances: 
+      - name: server1
+        cluster: cluster1
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.101/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.101/24
+      - name: server2
+        cluster: cluster1
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.102/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.102/24
+    s31:
+      instances:
+      - name: server3
+        cluster: cluster2
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.103/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.103/24
+      - name: server4
+        cluster: cluster2
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.104/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.104/24
+    s32:
+      instances:
+      - name: server5
+        cluster: cluster3
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.105/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.105/24
+      - name: server6
+        cluster: cluster3
+        memory: 40576000
+        cpus: 8
+        disk: 100G
+        interfaces:
+        - name: eth1
+          ip: 192.168.1.106/24
+          dns: 8.8.8.8
+          gateway: 192.168.1.1
+        - name: eth2
+          ip: 192.168.2.106/24

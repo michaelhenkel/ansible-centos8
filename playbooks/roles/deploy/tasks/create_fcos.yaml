@@ -1,0 +1,46 @@
+- name: get stats of fcos image
+  stat:
+    path: "/var/lib/libvirt/images/{{ item.name }}.qcow2"
+  register: p2
+
+- name: copy images
+  copy:
+    src: /var/lib/libvirt/images/{{ basename.stdout.split('.xz')[0] }}
+    dest: /var/lib/libvirt/images/{{ item.name }}.qcow2
+    remote_src: yes
+  #when: not p2.stat.exists
+
+- name: start docker daemon
+  systemd:
+    state: started
+    name: docker
+
+- name: destroy vm
+  virt:
+    name: "{{ item.name }}"
+    command: destroy
+  ignore_errors: yes
+
+- name: undefine vm
+  virt:
+    name: "{{ item.name }}"
+    command: undefine
+  ignore_errors: yes
+
+- name: define vm
+  virt:
+    name: "{{ item.name }}"
+    autostart: yes
+    command: define
+    xml: "{{ lookup('template', 'virsh.xml.j2') }}"
+
+- name: create fcc
+  template:
+    src: fcos.fcc.j2
+    dest: "/var/lib/libvirt/images/{{ item.name }}.fcc"
+
+- name: create ign
+  shell: "docker run -i --rm quay.io/coreos/fcct:release --pretty --strict < /var/lib/libvirt/images/{{ item.name }}.fcc > /var/lib/libvirt/images/{{ item.name }}.ign"
+
+- name: set selinux
+  shell: "chcon -t svirt_home_t /var/lib/libvirt/images/{{ item.name }}.ign"

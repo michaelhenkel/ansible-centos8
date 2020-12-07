@@ -1,0 +1,93 @@
+#- name: get basename
+#  shell: basename {{ image }}
+#  register: basename
+
+- name: "create ifcfgs on host"
+  include_tasks: create_ifcfgs.yaml
+  with_items: "{{ instances }}"
+  loop_control:
+    loop_var: item2
+
+- name: Replace a localhost entry with our own
+  lineinfile:
+    path: /tmp/hosts
+    regexp: '^127\.0\.0\.1'
+    line: 127.0.0.1 localhost
+    owner: root
+    group: root
+    mode: '0644'
+
+#- name: download image
+#  get_url:
+#    url: "{{ image }}"
+#    dest: /var/lib/libvirt/images/{{ basename.stdout }}
+#    remote_src: yes
+
+- name: destroy vm
+  virt:
+    name: "{{ item.name }}"
+    command: destroy
+  ignore_errors: yes
+
+- name: undefine vm
+  virt:
+    name: "{{ item.name }}"
+    command: undefine
+  ignore_errors: yes
+
+- name: create target image
+  shell: qemu-img create -f qcow2 /var/lib/libvirt/images/{{ item.name }}.qcow2 {{ item.disk }}
+
+- name: resize image
+  shell: virt-resize --expand /dev/sda1 /var/lib/libvirt/images/{{ basename.stdout }} /var/lib/libvirt/images/{{ item.name }}.qcow2
+
+- name: get stats of appliance
+  stat:
+    path: "/var/lib/libvirt/images/appliance"
+  register: p2
+
+- name: get and extract appliance
+  unarchive:
+    src: http://download.libguestfs.org/binaries/appliance/appliance-1.40.1.tar.xz
+    dest: /var/lib/libvirt/images/
+    remote_src: yes
+  retries: 3
+  delay: 3
+  register: result
+  until: result.failed == false
+  when: not p2.stat.exists
+
+#- name: debug rc
+#  debug:
+#    msg: "{{ result }}"
+
+- name: customize image
+  shell: export LIBGUESTFS_PATH=/var/lib/libvirt/images/appliance && \
+             virt-customize  -a /var/lib/libvirt/images/{{ item.name }}.qcow2 \
+             --run-command 'xfs_growfs /' \
+             --root-password password:{{ rootPwd }} \
+             --hostname {{ item.name }}.{{ item.cluster }}.{{ suffix }} \
+             --run-command 'useradd {{ username }}' \
+             --password {{ username }}:password:{{ userPwd }} \
+             --run-command 'echo "{{ username }} ALL=(root) NOPASSWD:ALL" | tee -a /etc/sudoers.d/{{ username }}' \
+             --chmod 0440:/etc/sudoers.d/{{ username }} \
+             --run-command 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config' \
+             --run-command 'systemctl enable sshd' \
+             --run-command 'yum remove -y cloud-init' \
+             --copy-in /tmp/hosts:/etc \
+             --copy-in /tmp/{{ item.name }}/network-scripts:/etc/sysconfig
+             --ssh-inject {{ username }}:string:"{{ key.stdout }}" \
+             --ssh-inject root:string:"{{ key.stdout }}" \
+             --selinux-relabel
+
+- name: define vm
+  virt:
+    name: "{{ item.name }}"
+    autostart: yes
+    command: define
+    xml: "{{ lookup('template', 'virsh.xml.j2') }}"
+
+- name: start vm
+  virt:
+    name: "{{ item.name }}"
+    command: start

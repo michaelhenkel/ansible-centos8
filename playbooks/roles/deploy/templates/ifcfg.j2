@@ -1,0 +1,15 @@
+TYPE=Ethernet
+BOOTPROTO=none
+NAME={{ iface.name }}
+DEVICE={{ iface.name }}
+ONBOOT=yes
+IPADDR={{ iface.ip.split("/")[0] }}
+PREFIX={{ iface.ip.split("/")[1] }}
+{% if iface.gateway is defined -%}
+DEFROUTE=yes
+GATEWAY={{ iface.gateway }}
+{% endif -%}
+{% if iface.dns is defined -%}
+DNS1={{ iface.dns }}
+{% endif -%}
+PEERDNS=no
